@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>レシートぱっと - レシート → 帳簿変換</title>
+  <meta name="description" content="レシートを撮るだけで帳簿データに変換。フリーランス・個人事業主の経費管理を3秒で。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ===== ヘッダー ===== -->
+  <header class="header">
+    <div class="header-inner">
+      <div class="logo">
+        <span class="logo-icon">🧾</span>
+        <div class="logo-text">
+          <h1>レシートぱっと</h1>
+          <p>レシート → 帳簿を3秒で</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <span class="receipt-count" id="receiptCount">0件</span>
+        <button class="btn btn-export" id="exportBtn" disabled>
+          📥 CSV出力
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ===== メインコンテンツ ===== -->
+  <main class="main">
+
+    <!-- アップロードエリア -->
+    <section class="upload-section" id="uploadSection">
+      <div class="upload-zone" id="uploadZone">
+        <div class="upload-icon">📸</div>
+        <h2>レシートを追加</h2>
+        <p>ドラッグ&ドロップ、またはクリックで画像を選択</p>
+        <div class="upload-buttons">
+          <label class="btn btn-primary" for="fileInput">
+            📁 ファイルを選択
+          </label>
+          <label class="btn btn-secondary" for="cameraInput">
+            📷 カメラで撮影
+          </label>
+        </div>
+        <input type="file" id="fileInput" accept="image/*" multiple hidden>
+        <input type="file" id="cameraInput" accept="image/*" capture="environment" hidden>
+      </div>
+    </section>
+
+    <!-- OCR処理中の表示 -->
+    <section class="processing-section" id="processingSection" style="display:none;">
+      <div class="processing-card">
+        <div class="processing-spinner"></div>
+        <h3 id="processingTitle">レシートを読み取り中...</h3>
+        <p id="processingDetail">OCR処理を実行しています</p>
+        <div class="processing-bar">
+          <div class="processing-bar-fill" id="processingBarFill"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 読み取り結果の編集フォーム -->
+    <section class="edit-section" id="editSection" style="display:none;">
+      <div class="edit-card">
+        <div class="edit-header">
+          <h3>📝 読み取り結果を確認</h3>
+          <button class="btn-icon" id="editCancel" title="キャンセル">✕</button>
+        </div>
+        <div class="edit-preview">
+          <img id="editPreviewImg" src="" alt="レシート画像">
+        </div>
+        <div class="edit-form">
+          <div class="form-row">
+            <div class="form-group">
+              <label>日付</label>
+              <input type="date" id="editDate" class="form-input">
+            </div>
+            <div class="form-group">
+              <label>金額（税込）</label>
+              <div class="input-with-unit">
+                <span class="input-prefix">¥</span>
+                <input type="number" id="editAmount" class="form-input" placeholder="0">
+              </div>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>店名・支払先</label>
+            <input type="text" id="editStore" class="form-input" placeholder="例: セブンイレブン">
+          </div>
+          <div class="form-group">
+            <label>勘定科目</label>
+            <select id="editCategory" class="form-input">
+              <option value="消耗品費">消耗品費（日用品・文具等）</option>
+              <option value="旅費交通費">旅費交通費（電車・タクシー等）</option>
+              <option value="通信費">通信費（携帯・インターネット等）</option>
+              <option value="接待交際費">接待交際費（飲食・贈答等）</option>
+              <option value="会議費">会議費（カフェ・打合せ等）</option>
+              <option value="新聞図書費">新聞図書費（書籍・教材等）</option>
+              <option value="地代家賃">地代家賃</option>
+              <option value="水道光熱費">水道光熱費</option>
+              <option value="広告宣伝費">広告宣伝費</option>
+              <option value="外注費">外注費</option>
+              <option value="荷造運賃">荷造運賃（送料等）</option>
+              <option value="雑費">雑費</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>メモ（任意）</label>
+            <input type="text" id="editMemo" class="form-input" placeholder="例: クライアント打合せ用">
+          </div>
+          <button class="btn btn-primary btn-full" id="editSave">✓ 登録する</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- レシート一覧 -->
+    <section class="list-section" id="listSection" style="display:none;">
+      <div class="list-header">
+        <h3>📋 登録済みレシート</h3>
+        <div class="list-actions">
+          <select id="exportFormat" class="form-input-sm">
+            <option value="freee">freee形式</option>
+            <option value="yayoi">弥生形式</option>
+            <option value="moneyforward">マネーフォワード形式</option>
+            <option value="generic">汎用CSV</option>
+          </select>
+        </div>
+      </div>
+      <div class="list-summary" id="listSummary"></div>
+      <div class="list-items" id="listItems"></div>
+    </section>
+
+  </main>
+
+  <!-- ===== フッター ===== -->
+  <footer class="footer">
+    <p>&copy; 2026 レシートぱっと — フリーランスの経費管理を3秒で</p>
+  </footer>
+
+  <!-- Tesseract.js (CDN) -->
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
